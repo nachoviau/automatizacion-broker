@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual env
+.venv/
+.env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Local data
+*.log
+
+# PDFs and sample outputs
+*.pdf
+salida*.json

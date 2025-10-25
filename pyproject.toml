@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "automation-broker"
+version = "0.1.0"
+description = "Automatización de carga de pólizas Allianz Auto"
+authors = [{name = "Nishy", email = "example@example.com"}]
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.setuptools]
+package-dir = {"" = "src"}

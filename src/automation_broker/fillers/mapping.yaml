@@ -1,0 +1,66 @@
+tabs:
+  condiciones: { click: { by: css, value: "#tab-condiciones" } }
+  tomador: { click: { by: css, value: "#tab-tomador" } }
+  vehiculo: { click: { by: css, value: "#tab-vehiculo" } }
+  coberturas: { click: { by: css, value: "#tab-coberturas" } }
+  montos: { click: { by: css, value: "#tab-montos" } }
+
+fields:
+  # Condiciones (IDs reales)
+  productor: { by: id, value: "idProductor", type: select2 }
+  cliente: { by: id, value: "idCliente", type: select2 }
+  aseguradora: { by: id, value: "idAseguradora", type: select }
+  riesgo: { by: id, value: "idRiesgo", type: select2 }
+  moneda: { by: id, value: "Moneda", type: select }
+  tipo_contacto_ssn: { by: id, value: "TipoContactoSSN", type: select }
+  tipo_iva: { by: id, value: "TipoIva", type: select }
+  tipo_renovacion: { by: id, value: "TipoRenovacion", type: select }
+  clausula_ajuste: { by: id, value: "ClausulaAjuste", type: select }
+  tipo_vigencia: { by: id, value: "TipoVigencia", type: select }
+  inicio_vigencia: { by: id, value: "InicioVigencia", type: input }
+  refacturacion: { by: id, value: "TipoRefacturacion", type: select }
+
+  # Vehículo (placeholders hasta confirmar IDs reales)
+  marca: { by: id, value: "vehiculoMarca", type: input }
+  anio: { by: id, value: "vehiculoAnio", type: input }
+  patente: { by: id, value: "vehiculoPatente", type: input }
+  chasis: { by: id, value: "vehiculoChasis", type: input }
+  motor: { by: id, value: "vehiculoMotor", type: input }
+
+  # Montos / Póliza / Fechas complementarias (placeholders hasta confirmar IDs)
+  prima_total: { by: id, value: "primaTotal", type: input }
+  premio_total: { by: id, value: "premioTotal", type: input }
+  numero_poliza: { by: id, value: "numeroPoliza", type: input }
+  fecha_emision: { by: id, value: "fechaEmision", type: input }
+  vencimiento_primera_cuota: { by: id, value: "vtoPrimeraCuota", type: input }
+
+fixed:
+  aseguradora: ALLIANZ
+  riesgo: AUTO
+  tipo_contacto_ssn: PRESENCIAL
+  tipo_renovacion: AUTOMATICA
+  clausula_ajuste: 0
+  cant_cuotas: 1
+  tipo_vigencia: anual
+  refacturacion: mensual
+
+select_value_map:
+  aseguradora:
+    ALLIANZ: ALLIANZ
+  riesgo:
+    AUTO: AUTO
+  moneda:
+    PESOS: Pesos
+  tipo_contacto_ssn:
+    PRESENCIAL: Presencial
+  tipo_iva:
+    CONSUMIDOR FINAL: Consumidor Final
+  tipo_renovacion:
+    AUTOMATICA: Automática
+  clausula_ajuste:
+    "0": "0"
+    0: "0"
+  tipo_vigencia:
+    anual: Anual
+  refacturacion:
+    mensual: Mensual
