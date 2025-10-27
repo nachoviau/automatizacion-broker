@@ -196,6 +196,25 @@ def fill_select2(driver: WebDriver, base_el, value: str, wait: WebDriverWait, fa
         select_id = select_id_initial or base_el.get_attribute("id") or ""
         cur_base = driver.find_element(By.ID, select_id) if select_id else base_el
 
+        # Guard: if riesgo depends on aseguradora, ensure it's ready before opening
+        if select_id == "idRiesgo":
+            end_ready = time.time() + 4.0
+            while time.time() < end_ready:
+                try:
+                    ready = driver.execute_script(
+                        "var a=document.getElementById('idAseguradora');"
+                        "var r=document.getElementById('idRiesgo');"
+                        "if(!a||!r) return false;"
+                        "var av=String(a.value||'');"
+                        "var dis=r.disabled===true;"
+                        "return av.length>0 && !dis;"
+                    )
+                    if ready:
+                        break
+                except Exception:
+                    pass
+                time.sleep(0.1)
+
         close_any_select2(driver, wait)
         rendered_css = f"#select2-{select_id}-container" if select_id else None
         results_css = f"#select2-{select_id}-results" if select_id else None
@@ -231,9 +250,25 @@ def fill_select2(driver: WebDriver, base_el, value: str, wait: WebDriverWait, fa
                 si.clear()
             except Exception:
                 pass
-            # Special case: idRiesgo and idCliente require slow typing to trigger AJAX search
-            if select_id in {"idRiesgo", "idCliente"}:
+            # Special case: idCliente requires setting value directly via JavaScript for reliability
+            if select_id == "idCliente":
                 try:
+                    # Set value directly via JavaScript to avoid character loss
+                    driver.execute_script(
+                        "arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+                        si,
+                        query_text
+                    )
+                    time.sleep(0.2)  # Short wait to start AJAX
+                except Exception:
+                    si.send_keys(query_text)
+                # Extra pause per request to allow remote results to load
+                time.sleep(2.0)
+            # idRiesgo requires slow typing to trigger AJAX
+            elif select_id == "idRiesgo":
+                try:
+                    # Extra pause before starting to type per request
+                    time.sleep(0.5)
                     for ch in str(query_text):
                         si.send_keys(ch)
                         try:
@@ -244,7 +279,7 @@ def fill_select2(driver: WebDriver, base_el, value: str, wait: WebDriverWait, fa
                             )
                         except Exception:
                             pass
-                        time.sleep(0.08 if select_id == "idRiesgo" else 0.10)
+                        time.sleep(0.08)
                 except Exception:
                     si.send_keys(query_text)
             else:
@@ -322,22 +357,72 @@ def fill_select2(driver: WebDriver, base_el, value: str, wait: WebDriverWait, fa
         
         # Click the chosen option
         if chosen:
-            if select_id == "idCliente" and si is not None:
-                # ENTER on highlighted option is more reliable than click for cliente
-                time.sleep(0.12)
-                try:
-                    si.send_keys(Keys.ENTER)
-                except Exception:
-                    pass
-                # Verify selection was applied; if not, try explicit click
+            if select_id == "idCliente":
+                # Special handling for idCliente (remote AJAX search)
+                # Strategy: Try multiple approaches in order until one works
+                time.sleep(0.2)  # Give AJAX more time to stabilize
+                
+                # Approach 1: ENTER key (most reliable for remote search)
+                if si is not None:
+                    try:
+                        # Ensure search input has focus
+                        driver.execute_script("arguments[0].focus();", si)
+                        time.sleep(0.05)
+                        si.send_keys(Keys.ENTER)
+                        time.sleep(0.15)
+                    except Exception:
+                        pass
+                
+                # Verify if selection was applied
                 applied = False
                 try:
                     rendered = driver.find_element(By.CSS_SELECTOR, "#select2-idCliente-container").text.strip()
-                    applied = (rendered and "Buscar" not in rendered and "Seleccione" not in rendered)
+                    applied = (rendered and "Buscar" not in rendered and "Seleccione" not in rendered and rendered != "")
                 except Exception:
                     applied = False
+                
+                # Approach 2: Direct click on highlighted option if ENTER failed
                 if not applied:
-                    js_mouse_click(driver, chosen)
+                    try:
+                        time.sleep(0.1)
+                        js_mouse_click(driver, chosen)
+                        time.sleep(0.15)
+                    except Exception:
+                        pass
+                    
+                    # Verify again
+                    try:
+                        rendered = driver.find_element(By.CSS_SELECTOR, "#select2-idCliente-container").text.strip()
+                        applied = (rendered and "Buscar" not in rendered and "Seleccione" not in rendered and rendered != "")
+                    except Exception:
+                        applied = False
+                
+                # Approach 3: Force selection via JavaScript as last resort
+                if not applied and si is not None:
+                    try:
+                        # Get the data-select2-id from chosen element
+                        val_ds2 = chosen.get_attribute("data-select2-id") or chosen.get_attribute("id") or ""
+                        txt_ds2 = chosen.text.strip()
+                        if val_ds2 and txt_ds2:
+                            # Use jQuery to force selection
+                            driver.execute_script("""
+                                var id = 'idCliente';
+                                var val = arguments[0];
+                                var txt = arguments[1];
+                                try {
+                                    if (window.jQuery && jQuery('#' + id).length) {
+                                        jQuery('#' + id).empty().append(new Option(txt, val, true, true));
+                                        jQuery('#' + id).trigger({
+                                            type: 'select2:select',
+                                            params: { data: { id: val, text: txt } }
+                                        });
+                                        jQuery('#' + id).trigger('change');
+                                    }
+                                } catch(e) { console.error('Select2 force selection error:', e); }
+                            """, val_ds2, txt_ds2)
+                            time.sleep(0.1)
+                    except Exception as e:
+                        pass
             else:
                 js_mouse_click(driver, chosen)
 
@@ -359,20 +444,46 @@ def fill_select2(driver: WebDriver, base_el, value: str, wait: WebDriverWait, fa
                 except Exception:
                     pass
                 time.sleep(0.05)
-        
-        # Additional validation for cliente field: avoid leaving with placeholder
-        if select_id == "idCliente":
+        # For riesgo, ensure the selection applied; otherwise signal retry
+        if select_id == "idRiesgo":
             try:
-                hid = driver.find_element(By.ID, "idCliente").get_attribute("value") or ""
-                rend = (driver.find_element(By.CSS_SELECTOR, "#select2-idCliente-container").text or "").strip()
-                if not hid or hid == "0" or (not rend or "Buscar" in rend or "Seleccione" in rend):
-                    # Last attempt: click again on chosen option if still visible
-                    try:
-                        js_mouse_click(driver, chosen)
-                    except Exception:
-                        pass
+                rend = (driver.find_element(By.CSS_SELECTOR, "#select2-idRiesgo-container").text or "").strip()
+                ok_txt = normalize_text(rend) in {normalize_text(value), normalize_text(query_text)} and rend and "Seleccione" not in rend and "Buscar" not in rend
             except Exception:
-                pass
+                ok_txt = False
+            try:
+                hid_val = (driver.find_element(By.ID, "idRiesgo").get_attribute("value") or "").strip()
+                ok_val = len(hid_val) > 0
+            except Exception:
+                ok_val = False
+            if not (ok_txt or ok_val):
+                return False
+        
+        # Additional validation for cliente field: ensure selection took effect
+        if select_id == "idCliente":
+            max_retries = 3
+            for retry in range(max_retries):
+                try:
+                    hid = driver.find_element(By.ID, "idCliente").get_attribute("value") or ""
+                    rend = (driver.find_element(By.CSS_SELECTOR, "#select2-idCliente-container").text or "").strip()
+                    
+                    # Check if selection is valid
+                    if hid and hid != "0" and rend and "Buscar" not in rend and "Seleccione" not in rend:
+                        break  # Selection successful
+                    
+                    # Selection failed, try to recover
+                    if retry < max_retries - 1:
+                        time.sleep(0.2)
+                        # Try to click the chosen option again
+                        try:
+                            if chosen:
+                                js_mouse_click(driver, chosen)
+                                time.sleep(0.2)
+                        except Exception:
+                            pass
+                except Exception:
+                    if retry < max_retries - 1:
+                        time.sleep(0.2)
         
         # Blur active element
         try:

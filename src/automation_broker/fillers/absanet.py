@@ -75,7 +75,9 @@ class AbsaNetForm:
         add("aseguradora", data.aseguradora, tab_key="condiciones")
         add("riesgo", data.riesgo, tab_key="condiciones")
         add("productor", data.productor, tab_key="condiciones")
-        # cliente: execute at END of condiciones tab (added last)
+        # Select cliente BEFORE dependent fields to avoid resets
+        add("cliente", data.cliente, tab_key="condiciones")
+        # Then fill dependent fields
         add("moneda", data.moneda, tab_key="condiciones")
         add("tipo_contacto_ssn", data.tipo_contacto_ssn, tab_key="condiciones")
         add("tipo_iva", data.tipo_iva, tab_key="condiciones")
@@ -85,7 +87,6 @@ class AbsaNetForm:
         add("tipo_vigencia", data.tipo_vigencia, tab_key="condiciones")
         add("inicio_vigencia", data.inicio_vigencia, tab_key="condiciones")
         add("refacturacion", data.refacturacion, tab_key="condiciones")
-        add("cliente", data.cliente, tab_key="condiciones")
 
         # Vehiculo tab
         add("marca", data.marca, tab_key="vehiculo")

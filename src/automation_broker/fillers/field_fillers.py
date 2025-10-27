@@ -220,8 +220,26 @@ def wait_for_field_post_effect(driver: WebDriver, field_key: str) -> None:
         field_key: Key identifying the field that was just filled
     """
     if field_key == "aseguradora":
-        # Give time for dependent 'riesgo' list to load
+        # Allow dependent 'riesgo' to repopulate and stabilize
         time.sleep(0.25)
+        # Wait until #idRiesgo looks populated (options > 1 and not a placeholder)
+        end = time.time() + 3.0
+        while time.time() < end:
+            try:
+                ready = driver.execute_script(
+                    "var s=document.getElementById('idRiesgo');"
+                    "if(!s) return false;"
+                    "var n=s.options? s.options.length: 0;"
+                    "if(n<=1) return false;"
+                    "var t=(s.options[0]||{}).text||'';"
+                    "t=String(t).toLowerCase();"
+                    "return !(t.includes('seleccione')||t.includes('cargando')||t.includes('buscando'));"
+                )
+                if ready:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.1)
     elif field_key == "riesgo":
         # Brief wait for site to process dynamic resets
         try:
@@ -229,3 +247,18 @@ def wait_for_field_post_effect(driver: WebDriver, field_key: str) -> None:
         except Exception:
             pass
         time.sleep(0.25)
+    elif field_key == "cliente":
+        # Cliente selection often triggers downstream recalculations
+        # Wait for dependent selects to be enabled and (re)populated
+        end = time.time() + 3.0
+        while time.time() < end:
+            try:
+                ready = driver.execute_script(
+                    "function ok(id){var s=document.getElementById(id); if(!s) return false; if(s.disabled) return false; var n=s.options? s.options.length: 0; if(n<=0) return false; var t=(s.options[0]||{}).text||''; t=String(t).toLowerCase(); return !(t.includes('seleccione')||t.includes('cargando')||t.includes('buscando'));}"
+                    "return ok('Moneda') && ok('TipoRenovacion') && ok('TipoVigencia') && ok('NroCuota');"
+                )
+                if ready:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.1)
