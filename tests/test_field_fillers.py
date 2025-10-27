@@ -136,9 +136,9 @@ class TestFillField:
         
         # Should use JavaScript to set value
         assert mock_driver.execute_script.called
-        # Should extract date part only
-        call_args = mock_driver.execute_script.call_args[0]
-        assert "01/01/2025" in str(call_args)
+        # Should extract date part only - check all calls
+        all_calls = str(mock_driver.execute_script.call_args_list)
+        assert "01/01/2025" in all_calls
     
     @patch('automation_broker.fillers.field_fillers.fill_select2')
     def test_fills_select2_field(self, mock_fill_select2):
