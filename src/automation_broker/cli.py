@@ -170,9 +170,31 @@ def main() -> None:
             allowed_tabs = {t.strip() for t in args.tabs.split(',') if t.strip()}
             print(f"[fill] start (tabs: {', '.join(sorted(allowed_tabs))})")
             form = AbsaNetForm(driver, timeout=int(args.sel_timeout))
-            plan = form.build_fill_plan(pd, mapping)
-            plan = [step for step in plan if step[1].get('tab') in allowed_tabs]
-            logs = form.fill_from_plan(plan, mapping, dry_run=False)
+            
+            # Mostrar siempre las tres vistas en el panel (navegables con ◀ ▶)
+            try:
+                form.show_preview_condiciones_dict(data_dict)
+                form.show_preview_item_dict(data_dict)
+                form.show_preview_costos(data_dict)
+            except Exception:
+                pass
+            
+            logs: List[str] = []
+            if 'condiciones' in allowed_tabs:
+                plan = form.build_fill_plan(pd, mapping)
+                plan = [step for step in plan if step[1].get('tab') == 'condiciones']
+                logs.extend(form.fill_from_plan(plan, mapping, dry_run=False))
+            
+            if 'items_modal' in allowed_tabs:
+                # Mostrar preview del item apenas abra el modal (moverlo al método del modal para timing exacto)
+                logs.extend(form.fill_items_modal(pd))
+            
+            if 'costos_preview' in allowed_tabs:
+                try:
+                    form.show_preview_costos(data_dict)
+                except Exception:
+                    pass
+            
             for l in logs:
                 print(l)
             print("[fill] end")

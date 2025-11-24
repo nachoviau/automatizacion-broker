@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import datetime
 from typing import Optional
 
@@ -88,3 +89,21 @@ def normalize_plate(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
     return value.replace("-", "").replace(" ", "").upper()
+
+
+def normalize_text_for_comparison(s: str) -> str:
+    """
+    Normalize text by removing accents and converting to lowercase.
+    
+    Useful for comparing text values in a tolerant way (e.g., for selecting
+    options in dropdowns where accents or case might differ).
+    
+    Args:
+        s: Input string to normalize
+        
+    Returns:
+        Normalized string (lowercase, no accents, trimmed)
+    """
+    s = unicodedata.normalize("NFKD", str(s))
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.strip().lower()

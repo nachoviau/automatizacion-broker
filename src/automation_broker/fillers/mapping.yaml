@@ -16,6 +16,7 @@ fields:
   tipo_iva: { by: id, value: "TipoIva", type: select }
   tipo_renovacion: { by: id, value: "TipoRenovacion", type: select }
   clausula_ajuste: { by: id, value: "ClausulaAjuste", type: select }
+  cant_cuotas: { by: id, value: "NroCuota", type: select }
   tipo_vigencia: { by: id, value: "TipoVigencia", type: select }
   inicio_vigencia: { by: id, value: "InicioVigencia", type: input }
   refacturacion: { by: id, value: "TipoRefacturacion", type: select }
@@ -60,6 +61,9 @@ select_value_map:
   clausula_ajuste:
     "0": "0"
     0: "0"
+  cant_cuotas:
+    "1": "1"
+    1: "1"
   tipo_vigencia:
     anual: Anual
   refacturacion:
